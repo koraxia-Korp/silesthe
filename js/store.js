@@ -18,7 +18,7 @@
 
   // Premissas padrão = os mesmos valores da planilha da Mayra.
   var PREMISSAS_PADRAO = {
-    custoEmbalagemUn: 1.325, // R$ por unidade (caixinha + etiqueta)
+    custoEmbalagemUn: 1, // R$ por unidade (caixinha + etiqueta)
     margem: 60,              // % de lucro desejado (sobre o preço de venda)
     taxa: 0,                 // % de taxa de plataforma
     valorHora: 0,            // R$/hora de mão de obra
@@ -35,32 +35,30 @@
 
   // Dados de exemplo = a planilha real, para abrir o app e já reconhecer tudo.
   function seed() {
-    var base = { id: uid(), nome: 'Base', precoPacote: 24.9, tamanhoPacote: 1000, unidade: 'g' };
-    var framb = { id: uid(), nome: 'Extrato de framboesa', precoPacote: 50.9, tamanhoPacote: 250, unidade: 'g' };
-    var ess = { id: uid(), nome: 'Essência', precoPacote: 31.4, tamanhoPacote: 100, unidade: 'g' };
-    var lauril = { id: uid(), nome: 'Lauril', precoPacote: 22.4, tamanhoPacote: 500, unidade: 'ml' };
-    var poEx = { id: uid(), nome: 'Extrato em pó', precoPacote: 53.8, tamanhoPacote: 200, unidade: 'g' };
-    var colza = { id: uid(), nome: 'Semente de Colza', precoPacote: 6.3, tamanhoPacote: 100, unidade: 'g' };
+    // Dados de exemplo genéricos (não são dados reais de ninguém) — servem só
+    // para demonstrar. Você pode editar/apagar e usar "Importar backup" nos Ajustes.
+    var base = { id: uid(), nome: 'Base glicerinada', precoPacote: 20, tamanhoPacote: 1000, unidade: 'g' };
+    var ess = { id: uid(), nome: 'Essência', precoPacote: 25, tamanhoPacote: 100, unidade: 'g' };
+    var corante = { id: uid(), nome: 'Corante', precoPacote: 10, tamanhoPacote: 50, unidade: 'ml' };
+    var oleo = { id: uid(), nome: 'Óleo essencial', precoPacote: 40, tamanhoPacote: 100, unidade: 'ml' };
+    var esf = { id: uid(), nome: 'Esfoliante', precoPacote: 15, tamanhoPacote: 200, unidade: 'g' };
 
-    var insumos = [base, framb, ess, lauril, poEx, colza];
+    var insumos = [base, ess, corante, oleo, esf];
 
     var receitas = [{
       id: uid(),
-      nome: 'Sabonete de Framboesa',
+      nome: 'Sabonete (exemplo)',
       tempoMin: 30,
       ingredientes: [
         { insumoId: base.id, quantidade: 1000 },
-        { insumoId: framb.id, quantidade: 100 },
-        { insumoId: ess.id, quantidade: 70 },
-        { insumoId: lauril.id, quantidade: 140 },
-        { insumoId: poEx.id, quantidade: 75 },
-        { insumoId: colza.id, quantidade: 20 }
+        { insumoId: ess.id, quantidade: 50 },
+        { insumoId: corante.id, quantidade: 10 },
+        { insumoId: oleo.id, quantidade: 20 },
+        { insumoId: esf.id, quantidade: 50 }
       ],
       formas: [
-        { id: uid(), nome: 'Folhas', peso: 50, qtd: 4 },
-        { id: uid(), nome: 'Retangular', peso: 100, qtd: 1 },
-        { id: uid(), nome: 'Massageadora', peso: 180, qtd: 1 },
-        { id: uid(), nome: 'Redonda', peso: 110, qtd: 1 }
+        { id: uid(), nome: 'Barra', peso: 100, qtd: 6 },
+        { id: uid(), nome: 'Mini', peso: 50, qtd: 4 }
       ]
     }];
 

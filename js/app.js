@@ -190,10 +190,9 @@
     var host = $('#view-ajustes');
     var p = Store.premissas;
     host.innerHTML =
-      '<div class="alert"><div class="alert-title">⚠️ Sobre a sua planilha</div>' +
-      '<p>A planilha somava só 4 dos 6 ingredientes no total do lote (faltavam <b>Extrato em pó</b> e <b>Semente de Colza</b>). Aqui o custo soma <b>todos</b>: o lote custa <b>R$ 94,95</b> (e não R$ 73,51), então os preços sugeridos ficam um pouco mais altos.</p>' +
-      '<ul><li>Folhas: R$ 20 → <b>R$ 25</b></li><li>Retangular: R$ 35 → <b>R$ 45</b></li>' +
-      '<li>Massageadora: R$ 60 → <b>R$ 80</b></li><li>Redonda: R$ 40 → <b>R$ 50</b></li></ul></div>' +
+      '<div class="alert"><div class="alert-title">💡 Como o preço é calculado</div>' +
+      '<p>Custo por unidade = insumos (rateados por peso entre as formas) + embalagem + mão de obra. ' +
+      'O <b>preço mínimo</b> = custo ÷ (1 − margem − taxa), e o <b>preço sugerido</b> arredonda pra cima no múltiplo escolhido.</p></div>' +
 
       '<div class="sec"><div class="sec-title">Premissas</div><div class="premissas">' +
       premRow('Custo de embalagem (por unidade)', 'custoEmbalagemUn', 'R$', null, p.custoEmbalagemUn) +
