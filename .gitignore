@@ -1,0 +1,10 @@
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Dependências (o app não usa, mas por garantia)
+node_modules/
+
+# Logs e temporários
+*.log
+*.tmp

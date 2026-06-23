@@ -1,0 +1,21 @@
+{
+  "name": "Silesthe — Precificação de Sabonetes",
+  "short_name": "Silesthe",
+  "description": "Calcule rápido e fácil o preço dos seus sabonetes artesanais.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf7ff",
+  "theme_color": "#7c5cbf",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#7c5cbf">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Silesthe">
+  <meta name="description" content="Calcule rápido e fácil o preço dos seus sabonetes artesanais.">
+  <title>Silesthe — Precificação de Sabonetes</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <button id="backBtn" class="icon-btn ghost hidden" aria-label="Voltar">‹</button>
+    <h1 id="viewTitle">Receitas</h1>
+    <button id="addBtn" class="icon-btn" aria-label="Adicionar">+</button>
+  </header>
+
+  <main id="app">
+    <section id="view-receitas" class="view"></section>
+    <section id="view-insumos" class="view hidden"></section>
+    <section id="view-ajustes" class="view hidden"></section>
+    <section id="view-detalhe" class="view hidden"></section>
+  </main>
+
+  <nav class="tabbar" id="tabbar">
+    <button class="tab active" data-view="receitas">
+      <span class="ico" aria-hidden="true">🧼</span><span class="lbl">Receitas</span>
+    </button>
+    <button class="tab" data-view="insumos">
+      <span class="ico" aria-hidden="true">🧪</span><span class="lbl">Insumos</span>
+    </button>
+    <button class="tab" data-view="ajustes">
+      <span class="ico" aria-hidden="true">⚙️</span><span class="lbl">Ajustes</span>
+    </button>
+  </nav>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/store.js"></script>
+  <script src="js/pricing.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
