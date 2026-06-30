@@ -6,7 +6,7 @@
   'use strict';
 
   // Versão do app (aparece nos Ajustes). Mantenha igual ao CACHE do sw.js.
-  var APP_VERSION = '1.3.0';
+  var APP_VERSION = '1.4.0';
   var APP_BUILD = '30/06/2026';
 
   // ---------- Helpers ----------
@@ -234,6 +234,13 @@
       selRow('Ratear embalagem', 'embalagemPor', p.embalagemPor, 'Igual por unidade', 'Por peso') +
       '</div><p class="muted small" style="margin-top:10px">“Igual por unidade” = mesmo valor pra toda forma. “Por peso” = proporcional ao tamanho de cada forma.</p></div>' +
 
+      '<div class="sec"><div class="sec-title">Inteligência Artificial (opcional)</div>' +
+      '<label class="field"><span class="field-lbl">Chave da API da Claude</span>' +
+      '<input class="inp" type="password" data-apikey autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk-ant-..." value="' + esc(Store.getApiKey()) + '"></label>' +
+      '<p class="muted small" style="margin-top:10px">Com a chave, o botão <b>“Gerar com IA”</b> nas receitas cria textos únicos de verdade (História &amp; Venda). ' +
+      'A chave fica <b>só neste aparelho</b> e <b>não entra no backup</b>. Você pega a sua em <b>console.anthropic.com</b>. ' +
+      'Deixe em branco pra usar o texto de exemplo.</p></div>' +
+
       '<div class="sec"><div class="sec-title">Dados</div><div class="data-actions">' +
       '<button class="btn primary block" data-export>Exportar backup (.json)</button>' +
       '<button class="btn ghost block" data-import>Importar backup</button>' +
@@ -251,12 +258,16 @@
     var r = Store.receitaById(currentReceitaId);
     if (!r) { goBack(); return; }
     var v = r.venda || {};
+    var temIA = !!(Store.getApiKey && Store.getApiKey());
+    var vendaHint = temIA
+      ? 'Texto pronto pra anúncio e etiqueta, criado pela IA a partir dos ingredientes. Edite à vontade.'
+      : 'Texto pronto pra anúncio e etiqueta. Sem chave de IA (configure nos Ajustes), gera um <b>exemplo automático</b>. Edite à vontade.';
     host.innerHTML =
       '<input class="inp detail-title" data-r="nome" value="' + esc(r.nome) + '" placeholder="Nome da receita">' +
       '<section class="sec"><div class="sec-title">Preços sugeridos</div><div id="formaResults" class="forma-results"></div></section>' +
       '<section class="sec"><div class="sec-title">Resumo do lote</div><div id="resumoLote" class="resumo"></div></section>' +
       '<section class="sec venda-sec"><div class="sec-title">História &amp; Venda ✨</div>' +
-      '<p class="muted small" style="margin:-2px 0 10px">Texto pronto pra anúncio e etiqueta. Gere um ponto de partida e edite à vontade. <b>(Modo exemplo — a IA de verdade entra no próximo passo.)</b></p>' +
+      '<p class="muted small" style="margin:-2px 0 10px">' + vendaHint + '</p>' +
       '<button class="btn primary block" data-gerar-venda>✨ Gerar com IA</button>' +
       '<div class="venda-campos">' +
       '<label class="field"><span class="field-lbl">História</span><textarea class="inp" data-venda="historia" rows="4" placeholder="A história e o conceito do sabonete…">' + esc(v.historia) + '</textarea></label>' +
@@ -397,12 +408,112 @@
   }
 
   // ---------- História & Venda (IA) ----------
-  // Hoje gera um exemplo local a partir dos ingredientes. No próximo passo,
-  // gerarVenda() passa a chamar a API da Claude — o resto da tela não muda.
+  // Com chave da API configurada nos Ajustes, gerarVenda() chama a Claude de
+  // verdade. Sem chave (ou offline), cai no exemplo local — a tela é a mesma.
+  function ingredienteNomes(receita) {
+    return (receita.ingredientes || []).map(function (it) {
+      var ins = Store.insumoById(it.insumoId);
+      return ins ? (ins.nome || '').trim() : '';
+    }).filter(Boolean);
+  }
+
   function gerarVenda(receita) {
+    var key = Store.getApiKey ? Store.getApiKey() : '';
+    if (key) return gerarVendaIA(receita, key);
+    // Sem chave: modo exemplo. Pequeno atraso só pra dar sensação de "gerando".
     return new Promise(function (resolve) {
-      setTimeout(function () { resolve(gerarVendaMock(receita)); }, 700);
+      setTimeout(function () { resolve(gerarVendaMock(receita)); }, 500);
     });
+  }
+
+  // Chama a API da Claude direto do navegador (a chave é da própria usuária e
+  // fica só no aparelho). Força uma "ferramenta" pra receber JSON já estruturado.
+  function gerarVendaIA(receita, apiKey) {
+    var nomeRec = (receita.nome || 'Sabonete artesanal').trim();
+    var nomes = ingredienteNomes(receita);
+    var lista = nomes.length ? nomes.join(', ') : '(nenhum ingrediente cadastrado)';
+
+    var ferramenta = {
+      name: 'montar_texto_venda',
+      description: 'Monta o texto de marketing de um sabonete artesanal premium.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          historia: { type: 'string', description: '2 a 4 frases contando a história e o conceito do sabonete, citando o nome e os ingredientes de destaque. Tom caloroso, sensorial e premium.' },
+          beneficios: { type: 'string', description: 'Benefícios em formato de lista: uma linha por ingrediente relevante, cada linha começando com "• " no padrão "• Ingrediente — benefício para a pele/sentidos.".' },
+          modoUso: { type: 'string', description: '1 a 2 frases curtas explicando como usar o sabonete.' },
+          slogan: { type: 'string', description: 'Uma frase de efeito curta e marcante (no máximo ~8 palavras).' }
+        },
+        required: ['historia', 'beneficios', 'modoUso', 'slogan']
+      }
+    };
+
+    var system = 'Você é redator(a) publicitário(a) especializado(a) em cosméticos naturais e sabonetes artesanais premium, escrevendo em português do Brasil. Seu texto é caloroso, sensorial e sofisticado, porém honesto: nunca prometa cura de doenças nem faça alegações médicas. Foque na experiência, no aroma, na textura, no autocuidado e na qualidade dos ingredientes de uma pequena marca que faz sabonetes à mão de altíssima qualidade.';
+    var userMsg = 'Crie o texto de venda para este sabonete artesanal premium.\n\n' +
+      'Nome: "' + nomeRec + '".\nIngredientes: ' + lista + '.\n\n' +
+      'Use os ingredientes reais acima para destacar benefícios sensoriais e de cuidado com a pele. ' +
+      'Responda chamando a ferramenta montar_texto_venda, em português do Brasil.';
+
+    var body = {
+      model: 'claude-opus-4-8',
+      max_tokens: 1500,
+      system: system,
+      messages: [{ role: 'user', content: userMsg }],
+      tools: [ferramenta],
+      tool_choice: { type: 'tool', name: 'montar_texto_venda', disable_parallel_tool_use: true }
+    };
+
+    return fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify(body)
+    }).then(function (resp) {
+      return resp.json().catch(function () { return null; }).then(function (data) {
+        if (!resp.ok) {
+          var msg = data && data.error && data.error.message ? data.error.message : ('Erro ' + resp.status);
+          throw new Error(msg);
+        }
+        return data;
+      });
+    }).then(function (data) {
+      var blocos = (data && data.content) || [];
+      var uso = null;
+      for (var i = 0; i < blocos.length; i++) {
+        if (blocos[i].type === 'tool_use') { uso = blocos[i]; break; }
+      }
+      if (!uso || !uso.input) throw new Error('Resposta inesperada da IA');
+      var v = uso.input;
+      return {
+        historia: String(v.historia || ''),
+        beneficios: String(v.beneficios || ''),
+        modoUso: String(v.modoUso || ''),
+        slogan: String(v.slogan || '')
+      };
+    });
+  }
+
+  // Traduz erros técnicos numa mensagem curta e amigável pra Mayra.
+  function mensagemErroIA(err, comIA) {
+    if (!comIA) return 'Não consegui gerar agora';
+    var m = (err && err.message ? err.message : '').toLowerCase();
+    if (m.indexOf('authentication') > -1 || m.indexOf('x-api-key') > -1 || m.indexOf('api key') > -1 || m.indexOf('api-key') > -1) {
+      return 'Chave da IA inválida — confira nos Ajustes.';
+    }
+    if (m.indexOf('failed to fetch') > -1 || m.indexOf('networkerror') > -1 || m.indexOf('load failed') > -1 || m.indexOf('fetch') > -1) {
+      return 'Sem internet pra usar a IA agora.';
+    }
+    if (m.indexOf('credit') > -1 || m.indexOf('billing') > -1 || m.indexOf('quota') > -1) {
+      return 'Sem créditos na conta da IA.';
+    }
+    if (m.indexOf('rate') > -1 || m.indexOf('overloaded') > -1 || m.indexOf('529') > -1) {
+      return 'IA ocupada — tente de novo em instantes.';
+    }
+    return 'IA indisponível agora. Tente de novo.';
   }
 
   var VENDA_KB = [
@@ -440,10 +551,7 @@
   }
 
   function gerarVendaMock(receita) {
-    var nomes = (receita.ingredientes || []).map(function (it) {
-      var ins = Store.insumoById(it.insumoId);
-      return ins ? ins.nome : '';
-    }).filter(Boolean);
+    var nomes = ingredienteNomes(receita);
 
     var benLinhas = [];
     var heroes = [];
@@ -494,15 +602,16 @@
   function onGerarVenda() {
     var r = Store.receitaById(currentReceitaId);
     if (!r) return;
+    var comIA = !!(Store.getApiKey && Store.getApiKey());
     var btn = document.querySelector('[data-gerar-venda]');
-    if (btn) { btn.disabled = true; btn.textContent = '✨ Gerando…'; }
+    if (btn) { btn.disabled = true; btn.textContent = comIA ? '✨ Gerando com IA…' : '✨ Gerando…'; }
     gerarVenda(r).then(function (venda) {
       r.venda = venda;
       Store.saveReceita(r);
       setVendaCampos(venda);
-      toast('Texto gerado (exemplo)');
-    }).catch(function () {
-      toast('Não consegui gerar agora');
+      toast(comIA ? 'Texto criado pela IA ✨' : 'Texto gerado (exemplo)');
+    }).catch(function (err) {
+      toast(mensagemErroIA(err, comIA));
     }).then(function () {
       if (btn) { btn.disabled = false; btn.textContent = '✨ Gerar com IA'; }
     });
@@ -591,6 +700,11 @@
         var patch = {};
         patch[t.dataset.p] = parseNum(t.value);
         Store.savePremissas(patch);
+        return;
+      }
+
+      if (t.hasAttribute && t.hasAttribute('data-apikey')) {
+        Store.setApiKey(t.value);
         return;
       }
 

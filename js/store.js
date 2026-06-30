@@ -15,6 +15,9 @@
   'use strict';
 
   var KEY = 'silesthe_v1';
+  // A chave da API fica num registro SEPARADO de propósito: assim ela nunca
+  // entra no backup (exportJSON) e nem é tocada ao importar dados.
+  var AKEY = 'silesthe_apikey';
 
   // Premissas padrão = os mesmos valores da planilha da Mayra.
   var PREMISSAS_PADRAO = {
@@ -190,6 +193,18 @@
     restaurarExemplo: function () {
       state = seed();
       persist();
+    },
+
+    // Chave da API da Claude — guardada só neste aparelho, fora do backup.
+    getApiKey: function () {
+      try { return localStorage.getItem(AKEY) || ''; } catch (e) { return ''; }
+    },
+    setApiKey: function (k) {
+      try {
+        k = (k || '').trim();
+        if (k) localStorage.setItem(AKEY, k);
+        else localStorage.removeItem(AKEY);
+      } catch (e) { /* ignora storage indisponível */ }
     },
     apagarTudo: function () {
       state = { premissas: clone(PREMISSAS_PADRAO), insumos: [], receitas: [] };
