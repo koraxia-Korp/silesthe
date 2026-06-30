@@ -6,7 +6,7 @@
   'use strict';
 
   // Versão do app (aparece nos Ajustes). Mantenha igual ao CACHE do sw.js.
-  var APP_VERSION = '1.4.0';
+  var APP_VERSION = '1.5.0';
   var APP_BUILD = '30/06/2026';
 
   // ---------- Helpers ----------
@@ -239,7 +239,10 @@
       '<input class="inp" type="password" data-apikey autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk-ant-..." value="' + esc(Store.getApiKey()) + '"></label>' +
       '<p class="muted small" style="margin-top:10px">Com a chave, o botão <b>“Gerar com IA”</b> nas receitas cria textos únicos de verdade (História &amp; Venda). ' +
       'A chave fica <b>só neste aparelho</b> e <b>não entra no backup</b>. Você pega a sua em <b>console.anthropic.com</b>. ' +
-      'Deixe em branco pra usar o texto de exemplo.</p></div>' +
+      'Deixe em branco pra usar o texto de exemplo.</p>' +
+      '<label class="field" style="margin-top:14px"><span class="field-lbl">Instruções da marca pra IA (opcional)</span>' +
+      '<textarea class="inp" data-prompt-ia rows="6" placeholder="Ex.: Nossa marca se chama Lua de Mel. Sabonetes veganos e sem crueldade, feitos em Petrópolis. Tom acolhedor e poético, falando com mulheres que amam autocuidado. Sempre destacar que é 100% natural.">' + esc(p.promptIA || '') + '</textarea></label>' +
+      '<p class="muted small" style="margin-top:8px">Essas instruções entram em <b>toda</b> geração — é como você ensina a IA a falar a língua da sua marca (nome, tom, público, diferenciais). Vão junto no backup.</p></div>' +
 
       '<div class="sec"><div class="sec-title">Dados</div><div class="data-actions">' +
       '<button class="btn primary block" data-export>Exportar backup (.json)</button>' +
@@ -270,9 +273,9 @@
       '<p class="muted small" style="margin:-2px 0 10px">' + vendaHint + '</p>' +
       '<button class="btn primary block" data-gerar-venda>✨ Gerar com IA</button>' +
       '<div class="venda-campos">' +
-      '<label class="field"><span class="field-lbl">História</span><textarea class="inp" data-venda="historia" rows="4" placeholder="A história e o conceito do sabonete…">' + esc(v.historia) + '</textarea></label>' +
-      '<label class="field"><span class="field-lbl">Benefícios</span><textarea class="inp" data-venda="beneficios" rows="5" placeholder="Benefícios de cada ingrediente…">' + esc(v.beneficios) + '</textarea></label>' +
-      '<label class="field"><span class="field-lbl">Modo de uso</span><textarea class="inp" data-venda="modoUso" rows="2" placeholder="Como usar…">' + esc(v.modoUso) + '</textarea></label>' +
+      '<label class="field"><span class="field-lbl">História</span><textarea class="inp" data-venda="historia" rows="8" placeholder="A história e o conceito do sabonete…">' + esc(v.historia) + '</textarea></label>' +
+      '<label class="field"><span class="field-lbl">Benefícios</span><textarea class="inp" data-venda="beneficios" rows="10" placeholder="Benefícios de cada ingrediente…">' + esc(v.beneficios) + '</textarea></label>' +
+      '<label class="field"><span class="field-lbl">Modo de uso</span><textarea class="inp" data-venda="modoUso" rows="4" placeholder="Como usar…">' + esc(v.modoUso) + '</textarea></label>' +
       '<label class="field"><span class="field-lbl">Slogan</span><input class="inp" data-venda="slogan" value="' + esc(v.slogan) + '" placeholder="Frase de efeito"></label>' +
       '</div>' +
       '<button class="btn ghost block" data-copiar-venda style="margin-top:10px">📋 Copiar tudo</button></section>' +
@@ -449,6 +452,11 @@
     };
 
     var system = 'Você é redator(a) publicitário(a) especializado(a) em cosméticos naturais e sabonetes artesanais premium, escrevendo em português do Brasil. Seu texto é caloroso, sensorial e sofisticado, porém honesto: nunca prometa cura de doenças nem faça alegações médicas. Foque na experiência, no aroma, na textura, no autocuidado e na qualidade dos ingredientes de uma pequena marca que faz sabonetes à mão de altíssima qualidade.';
+    var marca = '';
+    try { marca = (Store.premissas && Store.premissas.promptIA ? Store.premissas.promptIA : '').trim(); } catch (e) { marca = ''; }
+    if (marca) {
+      system += '\n\nInstruções da marca (priorize-as e respeite, sem inventar fatos que não foram informados):\n' + marca;
+    }
     var userMsg = 'Crie o texto de venda para este sabonete artesanal premium.\n\n' +
       'Nome: "' + nomeRec + '".\nIngredientes: ' + lista + '.\n\n' +
       'Use os ingredientes reais acima para destacar benefícios sensoriais e de cuidado com a pele. ' +
@@ -705,6 +713,11 @@
 
       if (t.hasAttribute && t.hasAttribute('data-apikey')) {
         Store.setApiKey(t.value);
+        return;
+      }
+
+      if (t.hasAttribute && t.hasAttribute('data-prompt-ia')) {
+        Store.savePremissas({ promptIA: t.value });
         return;
       }
 

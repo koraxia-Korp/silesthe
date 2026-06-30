@@ -205,7 +205,7 @@ select.inp, .sel { background-image: none; }
 .field { display: flex; flex-direction: column; gap: 5px; }
 .field-lbl { font-size: 12px; font-weight: 600; color: var(--muted); padding-left: 2px; }
 .row-field { gap: 6px; }
-textarea.inp { resize: vertical; min-height: 46px; line-height: 1.45; }
+textarea.inp { resize: vertical; min-height: 92px; line-height: 1.5; }
 .venda-campos { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
 
 /* ---------- Insumos ---------- */

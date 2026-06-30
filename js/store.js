@@ -28,7 +28,8 @@
     valorHora: 0,            // R$/hora de mão de obra
     arredondamento: 5,       // arredonda o preço pra cima nesse múltiplo (0 = não arredonda)
     maoObraPor: 'unidade',   // 'unidade' (igual p/ todas) | 'peso' (proporcional ao tamanho)
-    embalagemPor: 'unidade'  // 'unidade' | 'peso'
+    embalagemPor: 'unidade', // 'unidade' | 'peso'
+    promptIA: ''             // instruções da marca pra IA (texto livre; entra no backup)
   };
 
   function uid() {
