@@ -6,7 +6,7 @@
   'use strict';
 
   // Versão do app (aparece nos Ajustes). Mantenha igual ao CACHE do sw.js.
-  var APP_VERSION = '1.2.0';
+  var APP_VERSION = '1.3.0';
   var APP_BUILD = '30/06/2026';
 
   // ---------- Helpers ----------
@@ -250,10 +250,21 @@
     var host = $('#view-detalhe');
     var r = Store.receitaById(currentReceitaId);
     if (!r) { goBack(); return; }
+    var v = r.venda || {};
     host.innerHTML =
       '<input class="inp detail-title" data-r="nome" value="' + esc(r.nome) + '" placeholder="Nome da receita">' +
       '<section class="sec"><div class="sec-title">Preços sugeridos</div><div id="formaResults" class="forma-results"></div></section>' +
       '<section class="sec"><div class="sec-title">Resumo do lote</div><div id="resumoLote" class="resumo"></div></section>' +
+      '<section class="sec venda-sec"><div class="sec-title">História &amp; Venda ✨</div>' +
+      '<p class="muted small" style="margin:-2px 0 10px">Texto pronto pra anúncio e etiqueta. Gere um ponto de partida e edite à vontade. <b>(Modo exemplo — a IA de verdade entra no próximo passo.)</b></p>' +
+      '<button class="btn primary block" data-gerar-venda>✨ Gerar com IA</button>' +
+      '<div class="venda-campos">' +
+      '<label class="field"><span class="field-lbl">História</span><textarea class="inp" data-venda="historia" rows="4" placeholder="A história e o conceito do sabonete…">' + esc(v.historia) + '</textarea></label>' +
+      '<label class="field"><span class="field-lbl">Benefícios</span><textarea class="inp" data-venda="beneficios" rows="5" placeholder="Benefícios de cada ingrediente…">' + esc(v.beneficios) + '</textarea></label>' +
+      '<label class="field"><span class="field-lbl">Modo de uso</span><textarea class="inp" data-venda="modoUso" rows="2" placeholder="Como usar…">' + esc(v.modoUso) + '</textarea></label>' +
+      '<label class="field"><span class="field-lbl">Slogan</span><input class="inp" data-venda="slogan" value="' + esc(v.slogan) + '" placeholder="Frase de efeito"></label>' +
+      '</div>' +
+      '<button class="btn ghost block" data-copiar-venda style="margin-top:10px">📋 Copiar tudo</button></section>' +
       '<section class="sec"><div class="sec-title">Ingredientes do lote</div><div id="ingList" class="ing-list"></div>' +
       '<button class="add-row" data-add-ing>+ ingrediente</button>' +
       '<div class="total-line"><span>Custo total dos insumos</span><strong id="custoLoteVal">—</strong></div></section>' +
@@ -385,6 +396,136 @@
     });
   }
 
+  // ---------- História & Venda (IA) ----------
+  // Hoje gera um exemplo local a partir dos ingredientes. No próximo passo,
+  // gerarVenda() passa a chamar a API da Claude — o resto da tela não muda.
+  function gerarVenda(receita) {
+    return new Promise(function (resolve) {
+      setTimeout(function () { resolve(gerarVendaMock(receita)); }, 700);
+    });
+  }
+
+  var VENDA_KB = [
+    { keys: ['farelo de aveia', 'aveia'], benef: 'esfolia suavemente e acalma a pele sensível', hero: 'aveia' },
+    { keys: ['extrato de mel', 'mel'], benef: 'hidrata profundamente e tem ação antibacteriana natural', hero: 'mel' },
+    { keys: ['lavanda'], benef: 'relaxa, perfuma e ajuda a aliviar o estresse', hero: 'lavanda' },
+    { keys: ['framboesa'], benef: 'rica em antioxidantes, dá viço e frescor à pele', hero: 'framboesa' },
+    { keys: ['maracuj'], benef: 'calmante e adstringente, equilibra a oleosidade', hero: 'maracujá' },
+    { keys: ['algas'], benef: 'remineraliza e nutre a pele com ativos marinhos', hero: 'algas' },
+    { keys: ['aloe', 'babosa'], benef: 'acalma, hidrata e ajuda na recuperação da pele', hero: 'aloe vera' },
+    { keys: ['karit', 'manteiga'], benef: 'nutrição intensa que deixa a pele macia e protegida', hero: 'manteiga de karité' },
+    { keys: ['açafr', 'acafr'], benef: 'ilumina e uniformiza o tom da pele', hero: 'açafrão' },
+    { keys: ['limão', 'limao', 'siciliano'], benef: 'refresca e traz sensação de limpeza profunda', hero: 'limão siciliano' },
+    { keys: ['rosa'], benef: 'tonifica e perfuma com delicadeza floral', hero: 'rosas' },
+    { keys: ['amêndoa', 'amendoa'], benef: 'emoliente, deixa a pele sedosa e nutrida', hero: 'amêndoas' },
+    { keys: ['pitaya'], benef: 'antioxidante exótico que revitaliza a pele', hero: 'pitaya' },
+    { keys: ['colza', 'semente'], benef: 'esfoliação natural que renova a pele', hero: 'sementes' },
+    { keys: ['carv'], benef: 'efeito detox: absorve impurezas e controla a oleosidade', hero: 'carvão ativado' },
+    { keys: ['bucha'], benef: 'esfoliação física que ativa a circulação', hero: 'bucha natural' },
+    { keys: ['esfoliante'], benef: 'renova a pele removendo as células mortas', hero: 'esfoliante' },
+    { keys: ['óleo', 'oleo'], benef: 'aromaterapia que desperta os sentidos', hero: 'óleos essenciais' },
+    { keys: ['glicerin'], benef: 'limpeza suave com a hidratação da glicerina', hero: 'base glicerinada' },
+    { keys: ['lauril'], benef: 'garante uma espuma cremosa e envolvente', hero: '' },
+    { keys: ['essência', 'essencia'], benef: 'fragrância exclusiva que perfuma a pele', hero: '' }
+  ];
+
+  function matchKB(nome) {
+    var n = (nome || '').toLowerCase();
+    for (var i = 0; i < VENDA_KB.length; i++) {
+      for (var j = 0; j < VENDA_KB[i].keys.length; j++) {
+        if (n.indexOf(VENDA_KB[i].keys[j]) > -1) return VENDA_KB[i];
+      }
+    }
+    return null;
+  }
+
+  function gerarVendaMock(receita) {
+    var nomes = (receita.ingredientes || []).map(function (it) {
+      var ins = Store.insumoById(it.insumoId);
+      return ins ? ins.nome : '';
+    }).filter(Boolean);
+
+    var benLinhas = [];
+    var heroes = [];
+    nomes.forEach(function (nome) {
+      var m = matchKB(nome);
+      if (m) {
+        benLinhas.push('• ' + nome.trim() + ' — ' + m.benef + '.');
+        if (m.hero && heroes.indexOf(m.hero) === -1) heroes.push(m.hero);
+      }
+    });
+
+    var nomeRec = (receita.nome || 'Sabonete artesanal').trim();
+    var h1 = heroes[0], h2 = heroes[1], historia;
+    if (h1 && h2) {
+      historia = 'O ' + nomeRec + ' é mais que um sabonete — é um ritual. Feito à mão, une ' + h1 + ' e ' + h2 +
+        ' numa experiência sensorial única. Cada barra carrega o cuidado de uma produção artesanal premium, com ingredientes de altíssima qualidade, pra transformar o banho num momento só seu.';
+    } else if (h1) {
+      historia = 'O ' + nomeRec + ' nasce do poder de ' + h1 + '. Artesanal e feito em pequenos lotes com ingredientes premium, ' +
+        'ele transforma o banho num verdadeiro ritual de autocuidado.';
+    } else {
+      historia = 'O ' + nomeRec + ' é um sabonete artesanal premium, feito à mão em pequenos lotes e com ingredientes selecionados, ' +
+        'pra deixar a sua pele limpa, macia e perfumada — e o seu banho muito mais especial.';
+    }
+
+    var beneficios = benLinhas.length ? benLinhas.join('\n') :
+      '• Limpeza suave que respeita a pele.\n• Espuma cremosa e aroma marcante.\n• Feito à mão, com carinho e ingredientes de qualidade.';
+
+    var modoUso = 'Passe sobre a pele úmida com movimentos suaves, aproveitando a espuma e o aroma. Enxágue bem. ' +
+      'Entre os usos, deixe secar numa saboneteira que escorra a água para durar mais.';
+
+    var hl = (h1 || '').toLowerCase(), slogan;
+    if (hl.indexOf('lavanda') > -1) slogan = 'Respire fundo. Relaxe. Cuide-se.';
+    else if (hl.indexOf('mel') > -1) slogan = 'Doçura que cuida da sua pele.';
+    else if (hl.indexOf('aveia') > -1) slogan = 'O carinho que a sua pele pede.';
+    else if (hl.indexOf('carv') > -1) slogan = 'Pele limpa, leveza pura.';
+    else slogan = nomeRec + ': o seu ritual de cuidado.';
+
+    return { historia: historia, beneficios: beneficios, modoUso: modoUso, slogan: slogan };
+  }
+
+  function setVendaCampos(v) {
+    ['historia', 'beneficios', 'modoUso', 'slogan'].forEach(function (k) {
+      var el = document.querySelector('[data-venda="' + k + '"]');
+      if (el) el.value = v[k] || '';
+    });
+  }
+
+  function onGerarVenda() {
+    var r = Store.receitaById(currentReceitaId);
+    if (!r) return;
+    var btn = document.querySelector('[data-gerar-venda]');
+    if (btn) { btn.disabled = true; btn.textContent = '✨ Gerando…'; }
+    gerarVenda(r).then(function (venda) {
+      r.venda = venda;
+      Store.saveReceita(r);
+      setVendaCampos(venda);
+      toast('Texto gerado (exemplo)');
+    }).catch(function () {
+      toast('Não consegui gerar agora');
+    }).then(function () {
+      if (btn) { btn.disabled = false; btn.textContent = '✨ Gerar com IA'; }
+    });
+  }
+
+  function onCopiarVenda() {
+    var r = Store.receitaById(currentReceitaId);
+    if (!r) return;
+    var v = r.venda || {};
+    var partes = [];
+    if (v.historia) partes.push(v.historia);
+    if (v.beneficios) partes.push('Benefícios:\n' + v.beneficios);
+    if (v.modoUso) partes.push('Modo de uso: ' + v.modoUso);
+    if (v.slogan) partes.push(v.slogan);
+    var txt = partes.join('\n\n');
+    if (!txt) { toast('Nada pra copiar ainda'); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function () { toast('Copiado!'); }, function () { toast('Não consegui copiar'); });
+    } else {
+      toast('Cópia não suportada neste navegador');
+    }
+  }
+
   // ---------- Dados: export / import ----------
   function doExport() {
     var data = Store.exportJSON();
@@ -458,6 +599,7 @@
         if (!r) return;
         if (t.dataset.r === 'nome') { r.nome = t.value; Store.saveReceita(r); return; }
         if (t.dataset.r === 'tempoMin') { r.tempoMin = parseNum(t.value); Store.saveReceita(r); refreshComputed(); return; }
+        if (t.hasAttribute('data-venda')) { r.venda = r.venda || {}; r.venda[t.dataset.venda] = t.value; Store.saveReceita(r); return; }
         if (t.hasAttribute('data-ing-qtd')) {
           var i1 = +t.dataset.ingQtd;
           if (r.ingredientes[i1]) { r.ingredientes[i1].quantidade = parseNum(t.value); Store.saveReceita(r); refreshComputed(); }
@@ -580,6 +722,9 @@
         return;
       }
 
+      if (t.closest && t.closest('[data-gerar-venda]')) { onGerarVenda(); return; }
+      if (t.closest && t.closest('[data-copiar-venda]')) { onCopiarVenda(); return; }
+
       if (t.closest && t.closest('[data-export]')) { doExport(); return; }
       if (t.closest && t.closest('[data-import]')) { $('#importFile').click(); return; }
       if (t.closest && t.closest('[data-restaurar]')) {
@@ -611,7 +756,10 @@
   }
 
   // ---------- Init ----------
+  var started = false;
   function init() {
+    if (started) return;  // roda só uma vez (evita religar eventos / resetar a tela)
+    started = true;
     wireEvents();
     registerSW();
     setView('receitas');

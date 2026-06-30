@@ -1,4 +1,4 @@
-const CACHE = 'silesthe-1.2.0';
+const CACHE = 'silesthe-1.3.0';
 
 const precache = [
   './',

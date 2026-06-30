@@ -78,6 +78,10 @@
       r.ingredientes = Array.isArray(r.ingredientes) ? r.ingredientes : [];
       r.formas = Array.isArray(r.formas) ? r.formas : [];
       r.formas.forEach(function (f) { if (!f.id) f.id = uid(); });
+      if (!r.venda || typeof r.venda !== 'object') r.venda = {};
+      ['historia', 'beneficios', 'modoUso', 'slogan'].forEach(function (k) {
+        if (typeof r.venda[k] !== 'string') r.venda[k] = '';
+      });
     });
     return data;
   }
@@ -89,7 +93,7 @@
     } catch (e) {
       console.error('Falha ao ler dados salvos:', e);
     }
-    return seed();
+    return migrate(seed());
   }
 
   var state = load();
