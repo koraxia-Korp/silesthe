@@ -397,6 +397,7 @@ select.inp, .sel { background-image: none; }
 }
 .prem-lbl { font-size: 14px; font-weight: 600; flex: 1; }
 .prem-row .inp-wrap { width: 130px; flex: none; }
+.prem-row select.inp, .selauto { width: auto; flex: none; max-width: 64%; }
 
 .data-actions { display: flex; flex-direction: column; gap: 10px; }
 

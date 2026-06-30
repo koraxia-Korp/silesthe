@@ -18,11 +18,14 @@
 
   // Premissas padrão = os mesmos valores da planilha da Mayra.
   var PREMISSAS_PADRAO = {
-    custoEmbalagemUn: 1, // R$ por unidade (caixinha + etiqueta)
-    margem: 60,              // % de lucro desejado (sobre o preço de venda)
+    metodoMargem: 'markup',  // 'markup' (margem sobre o custo) | 'divisor' (margem sobre o preço de venda)
+    custoEmbalagemUn: 1,     // R$ por unidade (caixinha + etiqueta)
+    margem: 100,             // % de margem (markup: 100% = dobro do custo)
     taxa: 0,                 // % de taxa de plataforma
     valorHora: 0,            // R$/hora de mão de obra
-    arredondamento: 5        // arredonda o preço pra cima nesse múltiplo (0 = não arredonda)
+    arredondamento: 5,       // arredonda o preço pra cima nesse múltiplo (0 = não arredonda)
+    maoObraPor: 'unidade',   // 'unidade' (igual p/ todas) | 'peso' (proporcional ao tamanho)
+    embalagemPor: 'unidade'  // 'unidade' | 'peso'
   };
 
   function uid() {

@@ -25,16 +25,20 @@ Calculadora de precificação de **sabonetes artesanais**, feita para usar no ce
 4. Embalagem por unidade = valor fixo das premissas.
 5. Mão de obra por unidade = `(tempo_do_lote_min ÷ 60 × valor_da_hora) ÷ total_de_unidades`.
 6. Custo total/un = insumo + embalagem + mão de obra.
-7. **Preço mínimo** = `custo ÷ (1 − margem − taxa)`.
-8. **Preço sugerido** = arredonda o mínimo **para cima** no múltiplo configurado (padrão: 5).
+7. **Preço** — dois métodos (escolhidos em Ajustes):
+   - **Markup** (padrão): `preço = custo × (1 + margem)`. Ex.: 100% → o dobro do custo.
+   - **Sobre o preço de venda**: `preço = custo ÷ (1 − margem − taxa)` (aqui a margem precisa ser < 100%).
+8. **Preço sugerido** = arredonda o preço **para cima** no múltiplo configurado (padrão: 5).
 
 Resumo do lote: receita bruta, custo, lucro, margem real e equivalente em R$/hora.
 
 ## Premissas padrão (em Ajustes)
-- Embalagem por unidade: R$ 1,00
-- Margem de lucro: 60% (sobre o preço de venda)
+- Método da margem: **markup** (margem sobre o custo)
+- Margem: 100% (markup → o dobro do custo)
 - Taxa de plataforma: 0%
+- Embalagem por unidade: R$ 1,00
 - Valor da hora: R$ 0/h
+- Ratear mão de obra e embalagem: por unidade (pode mudar para por peso)
 - Arredondamento: múltiplo de 5 (use 0 para não arredondar)
 
 > Os dados que vêm preenchidos são **apenas exemplos genéricos**. Para carregar seus próprios dados de uma vez, use **Ajustes → Importar backup**.

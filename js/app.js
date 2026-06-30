@@ -17,6 +17,11 @@
   function numLabel(v) { v = Number(v); if (!isFinite(v)) v = 0; return fmtN.format(v); }
   function pct(frac) { frac = Number(frac); if (!isFinite(frac)) frac = 0; return fmtPct.format(frac * 100) + '%'; }
   function custoUnLabel(v, unidade) { v = Number(v); if (!isFinite(v)) v = 0; return 'R$ ' + fmt4.format(v) + ' / ' + (unidade || 'un'); }
+  function custoComparavelLabel(insumo) {
+    var norm = Pricing.custoNormalizado(insumo);
+    if (!isFinite(norm)) norm = 0;
+    return 'R$ ' + fmt4.format(norm) + ' / ' + Pricing.baseUnidade(insumo ? insumo.unidade : 'un');
+  }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -161,7 +166,7 @@
       '<label class="field"><span class="field-lbl">Unidade</span>' +
       '<select class="inp sel" data-f="unidade">' + opts + '</select></label>' +
       '</div>' +
-      '<div class="ins-foot"><span class="ins-custo">' + custoUnLabel(Pricing.custoUnInsumo(i), i.unidade) + '</span>' +
+      '<div class="ins-foot"><span class="ins-custo">' + custoComparavelLabel(i) + '</span>' +
       '<button class="btn-del" data-del-insumo="' + i.id + '">Excluir</button></div>' +
       '</div>';
   }
@@ -169,7 +174,7 @@
   function renderInsumos() {
     var host = $('#view-insumos');
     var list = Store.insumos;
-    var h = '<p class="ins-intro">Materiais das receitas. O custo por g/ml é calculado sozinho (preço do pacote ÷ tamanho).</p>';
+    var h = '<p class="ins-intro">Materiais das receitas. O custo é mostrado por <b>g/ml/un</b> (preço ÷ tamanho), pra comparar fornecedores mesmo com pacotes de tamanhos diferentes.</p>';
     if (!list.length) {
       h += emptyHTML('🧪', 'Nenhum insumo ainda', 'Toque em + para cadastrar um material (base, essência, embalagem...).');
     } else {
@@ -186,21 +191,44 @@
     return '<label class="prem-row"><span class="prem-lbl">' + label + '</span>' + wrap + '</label>';
   }
 
+  function selRow(label, key, val, optA, optB) {
+    val = val === 'peso' ? 'peso' : 'unidade';
+    return '<label class="prem-row"><span class="prem-lbl">' + label + '</span>' +
+      '<select class="inp sel selauto" data-ps="' + key + '">' +
+      '<option value="unidade"' + (val === 'unidade' ? ' selected' : '') + '>' + optA + '</option>' +
+      '<option value="peso"' + (val === 'peso' ? ' selected' : '') + '>' + optB + '</option>' +
+      '</select></label>';
+  }
+
   function renderAjustes() {
     var host = $('#view-ajustes');
     var p = Store.premissas;
+    var metodo = p.metodoMargem === 'divisor' ? 'divisor' : 'markup';
+    var margemLbl = metodo === 'divisor' ? 'Margem (sobre o preço de venda)' : 'Margem (markup sobre o custo)';
+    var margemHint = metodo === 'divisor'
+      ? 'Preço = custo ÷ (1 − margem − taxa). A margem precisa ser <b>menor que 100%</b>. Ex.: 60% → preço 2,5× o custo.'
+      : 'Preço = custo × (1 + margem). Ex.: <b>100% → o dobro</b> do custo; 50% → 1,5×.';
     host.innerHTML =
       '<div class="alert"><div class="alert-title">💡 Como o preço é calculado</div>' +
-      '<p>Custo por unidade = insumos (rateados por peso entre as formas) + embalagem + mão de obra. ' +
-      'O <b>preço mínimo</b> = custo ÷ (1 − margem − taxa), e o <b>preço sugerido</b> arredonda pra cima no múltiplo escolhido.</p></div>' +
+      '<p>Custo/un = insumos (rateados por peso) + embalagem + mão de obra. Depois aplica a margem e arredonda pra cima.</p></div>' +
 
-      '<div class="sec"><div class="sec-title">Premissas</div><div class="premissas">' +
-      premRow('Custo de embalagem (por unidade)', 'custoEmbalagemUn', 'R$', null, p.custoEmbalagemUn) +
-      premRow('Margem de lucro desejada', 'margem', null, '%', p.margem) +
+      '<div class="sec"><div class="sec-title">Margem e preço</div><div class="premissas">' +
+      '<label class="prem-row"><span class="prem-lbl">Método da margem</span>' +
+      '<select class="inp sel selauto" data-ps="metodoMargem">' +
+      '<option value="markup"' + (metodo === 'markup' ? ' selected' : '') + '>Markup (sobre o custo)</option>' +
+      '<option value="divisor"' + (metodo === 'divisor' ? ' selected' : '') + '>Sobre o preço de venda</option>' +
+      '</select></label>' +
+      premRow(margemLbl, 'margem', null, '%', p.margem) +
       premRow('Taxa de plataforma', 'taxa', null, '%', p.taxa) +
-      premRow('Valor da hora de trabalho', 'valorHora', 'R$', null, p.valorHora) +
       premRow('Arredondar preço (múltiplo)', 'arredondamento', 'R$', null, p.arredondamento) +
-      '</div><p class="muted small" style="margin-top:10px">A margem é sobre o preço de venda: margem 60% e taxa 0% → preço = custo ÷ 0,40. Arredondamento 0 = não arredonda.</p></div>' +
+      '</div><p class="muted small" style="margin-top:10px">' + margemHint + ' Arredondamento 0 = não arredonda.</p></div>' +
+
+      '<div class="sec"><div class="sec-title">Custos</div><div class="premissas">' +
+      premRow('Custo de embalagem (por unidade)', 'custoEmbalagemUn', 'R$', null, p.custoEmbalagemUn) +
+      premRow('Valor da hora de trabalho', 'valorHora', 'R$', null, p.valorHora) +
+      selRow('Ratear mão de obra', 'maoObraPor', p.maoObraPor, 'Igual por unidade', 'Por peso') +
+      selRow('Ratear embalagem', 'embalagemPor', p.embalagemPor, 'Igual por unidade', 'Por peso') +
+      '</div><p class="muted small" style="margin-top:10px">“Igual por unidade” = mesmo valor pra toda forma. “Por peso” = proporcional ao tamanho de cada forma.</p></div>' +
 
       '<div class="sec"><div class="sec-title">Dados</div><div class="data-actions">' +
       '<button class="btn primary block" data-export>Exportar backup (.json)</button>' +
@@ -294,6 +322,10 @@
     return '<div class="r-item"><div class="r-lbl">' + lbl + '</div><div class="r-val">' + valHTML + '</div></div>';
   }
 
+  function avisoBox(msg) {
+    return '<div class="alert" style="margin:0 0 10px"><p style="margin:0">⚠️ ' + msg + '</p></div>';
+  }
+
   function refreshComputed() {
     var r = Store.receitaById(currentReceitaId);
     if (!r) return;
@@ -301,10 +333,14 @@
 
     var fr = $('#formaResults');
     if (fr) {
+      var avisos = '';
+      if (c.semIngredientes) avisos += avisoBox('Sem ingredientes nesta receita — adicione insumos para o custo fazer sentido.');
+      if (c.rendimentoAlerta) avisos += avisoBox('Rendimento incomum: ingredientes ≈ ' + numLabel(c.massaEntrada) + ' g, mas as formas somam ' + numLabel(c.pesoTotalLote) + ' g (' + c.rendimentoRatio.toFixed(1) + '×). Confira as quantidades e as unidades.');
+      if (!c.precoCalculavel) avisos += avisoBox('Não dá pra calcular o preço: no método “sobre o preço de venda”, margem + taxa precisa ser menor que 100%. Ajuste em Ajustes.');
       if (!c.formas.length) {
-        fr.innerHTML = '<p class="muted small">Adicione formas para ver os preços.</p>';
+        fr.innerHTML = avisos + '<p class="muted small">Adicione formas para ver os preços.</p>';
       } else {
-        fr.innerHTML = c.formas.map(function (f) {
+        fr.innerHTML = avisos + c.formas.map(function (f) {
           var preco = isFinite(f.precoSugerido) ? money(f.precoSugerido) : '—';
           var min = isFinite(f.precoMinimo) ? money(f.precoMinimo) : '—';
           var lucroUn = isFinite(f.precoSugerido) ? money(f.precoSugerido - f.custoTotalUn) : '—';
@@ -327,8 +363,7 @@
         rItem('Custo total do lote', money(c.custoTotalLote)) +
         rItem('Lucro do lote', '<span class="' + (c.lucroLote >= 0 ? 'good' : 'bad') + '">' + money(c.lucroLote) + '</span>') +
         rItem('Margem real', c.receitaBrutaLote > 0 ? pct(c.margemRealLote) : '—') +
-        rItem('Equivale a (por hora)', hasTempo ? money(c.rhEquivalente) + ' / h' : '—') +
-        (c.divisorOk ? '' : '<div class="r-item"><div class="r-lbl bad">Margem + taxa ≥ 100%</div><div class="r-val bad">ajuste em Ajustes</div></div>');
+        rItem('Equivale a (por hora)', hasTempo ? money(c.rhEquivalente) + ' / h' : '—');
     }
 
     var cl = $('#custoLoteVal');
@@ -403,7 +438,7 @@
         else if (t.dataset.f === 'tamanhoPacote') ins.tamanhoPacote = parseNum(t.value);
         Store.saveInsumo(ins);
         var lbl = insCard.querySelector('.ins-custo');
-        if (lbl) lbl.textContent = custoUnLabel(Pricing.custoUnInsumo(ins), ins.unidade);
+        if (lbl) lbl.textContent = custoComparavelLabel(ins);
         return;
       }
 
@@ -446,6 +481,14 @@
       var t = e.target;
       if (t.id === 'importFile') { handleImportFile(t); return; }
 
+      if (t.dataset.ps) {
+        var pp = {};
+        pp[t.dataset.ps] = t.value;
+        Store.savePremissas(pp);
+        renderAjustes();
+        return;
+      }
+
       var insCard = t.closest && t.closest('.ins-card');
       if (insCard && t.dataset.f === 'unidade') {
         var ins = Store.insumoById(insCard.dataset.insumo);
@@ -453,7 +496,7 @@
           ins.unidade = t.value;
           Store.saveInsumo(ins);
           var lbl = insCard.querySelector('.ins-custo');
-          if (lbl) lbl.textContent = custoUnLabel(Pricing.custoUnInsumo(ins), ins.unidade);
+          if (lbl) lbl.textContent = custoComparavelLabel(ins);
         }
         return;
       }
