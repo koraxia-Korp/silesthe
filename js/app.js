@@ -5,6 +5,10 @@
 (function () {
   'use strict';
 
+  // Versão do app (aparece nos Ajustes). Mantenha igual ao CACHE do sw.js.
+  var APP_VERSION = '1.2.0';
+  var APP_BUILD = '30/06/2026';
+
   // ---------- Helpers ----------
   var $ = function (s) { return document.querySelector(s); };
 
@@ -238,7 +242,7 @@
       '<button class="btn danger block" data-apagar>Apagar tudo</button>' +
       '</div><p class="muted small" style="margin-top:10px">Seus dados ficam só neste aparelho. Faça backup antes de trocar de celular ou limpar o navegador.</p></div>' +
 
-      '<div class="app-foot">Silesthe 💜</div>';
+      '<div class="app-foot">Silesthe 💜<br><span class="muted small">versão ' + APP_VERSION + ' · ' + APP_BUILD + '</span></div>';
   }
 
   // ---------- Render: Detalhe (receita) ----------
